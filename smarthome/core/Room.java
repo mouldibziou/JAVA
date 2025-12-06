@@ -1,15 +1,62 @@
 package smarthome.core;
 
-public class Room {
+import smarthome.devices.SmartDevice;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+public class Room{
 
     private String name;
+    private List<SmartDevice> devices;
 
-    public Room(String name) {
-        this.name = name;
+    public Room(String name){
+        if (name == null || name.trim().isEmpty()){
+            throw new IllegalArgumentException("Room name cannot be empty");
+        }
+
+        this.name = name.trim();
+        this.devices = new ArrayList<>();
     }
 
     public String getName() {
         return name;
     }
+    public void addDevice(SmartDevice device) {
+        if (device == null)
+            throw new IllegalArgumentException("Device cannot be null.");
+
+        devices.add(device);
+    }
+    public void removeDevice(SmartDevice device){
+        devices.remove(device);
+    }
+    public int getNumOfDevices() {
+        return devices.size();
+    }
+    public List<SmartDevice> getDevices(){
+        return devices;
+    }
+
+    // Search device methods
+    public SmartDevice findDeviceById(String id) {
+        for (SmartDevice dev : devices) {
+            if (dev.getId().equals(id)) {
+                return dev;
+            }
+        }
+        return null;
+    }
+    public SmartDevice findDeviceByType(String type) {
+        for (SmartDevice dev : devices) {
+            if (dev.getType().equalsIgnoreCase(type)) {
+                return dev;
+            }
+        }
+        return null;
+    }
 }
+
+// Method to assign size automatically based on the number of devices using super tag. (highly equipped...)
 

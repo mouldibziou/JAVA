@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public abstract class SmartDevice implements Controllable, EnergyConsumer {
 
+    //chabeb zidou 'type' lahne, as an attribute yaani. W zidouna maah getType method.
     private final String id;
     private String name;
     private boolean isOn;
