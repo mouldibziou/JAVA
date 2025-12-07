@@ -3,9 +3,12 @@
 package smarthome.core;
 
 import smarthome.devices.SmartDevice;
+import smarthome.exceptions.DeviceNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
+
+// I can add bulk operations, like turning off all devices for a specific room, or the house.
 
 public class Home{
     // Home object can be used multiple times to add/remove rooms, change ownership of a home based on its id.
@@ -68,24 +71,71 @@ public class Home{
     }
     // Search method that allows locating a device by ID or type, using method overloading.
     public String deviceLocation(String id) {
-        for (Room r : rooms) {
-            SmartDevice found = r.findDeviceById(id);
-            if (found != null) {
-                return "Device with ID " + id + " found in room: " + r.getName();
+        try {
+            for (Room r : rooms){
+                SmartDevice found = r.findDeviceById(id);
+                if (found != null){
+                    return "Device with ID " + id + " found in room: " + r.getName();
+                }
             }
+            throw new DeviceNotFoundException("Device with ID " + id + " not found.");
+        } catch (DeviceNotFoundException e){
+            return e.getMessage();
         }
-        return "Device with ID " + id + " not found in this home.";
-    }
-    public String deviceLocationByType(String type) {
-        for (Room r : rooms) {
-            SmartDevice found = r.findDeviceByType(type);
-            if (found != null) {
-                return "Device of type " + type + " found in room: " + r.getName();
-            }
-        }
-        return "No device of type " + type + " found in this home.";
     }
 
+    public String deviceLocationByType(String type) {
+        try {
+            for (Room r : rooms){
+                SmartDevice found = r.findDeviceByType(type);
+                if (found != null){
+                    return "Device of type " + type + " found in room: " + r.getName();
+                }
+            }
+            throw new DeviceNotFoundException("Device of type " + type + " not found.");
+        } catch (DeviceNotFoundException e){
+            return e.getMessage();
+        }
+    }
+    // method that returns empty rooms' names
+    public List<String> getEmptyRoomNames(){
+        List<String> emptyNames = new ArrayList<>();
+
+        for (Room r : rooms) {
+            if (r.getNumOfDevices() == 0){
+                emptyNames.add(r.getName());
+            }
+        }
+        return emptyNames;
+    }
+    // method that returns the count of devices for a selected room, we are already certain that rooms' names cannot be duplicate.
+    public int getDeviceCountInRoom(String roomName) {
+        for (Room r : rooms){
+            if (r.getName().equalsIgnoreCase(roomName)) {
+                return r.getNumOfDevices();
+            }
+        }
+        throw new IllegalArgumentException("No room with the name " + roomName + " found.");
+    }
+    // getSmartScoring method tells to which scale a home is equipped.
+    private int getTotalDevices(){
+        int total = 0;
+        for (Room r : rooms){
+            total += r.getNumOfDevices();
+        }
+        return total;
+    }
+    private HomeSize getHomeSize(){
+        int total = getTotalDevices();
+
+        if (total <= 5) return HomeSize.SMALL;
+        if (total <= 15) return HomeSize.MEDIUM;
+        if (total <= 30) return HomeSize.LARGE;
+        return HomeSize.SMART;
+    }
+    public String getSmartScoring(){
+        return getHomeSize().getDescription();
+    }
     // getters and setters for every attribute
     public String getOwner(){
         return owner;
