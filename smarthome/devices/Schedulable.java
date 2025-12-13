@@ -1,6 +1,6 @@
 package smarthome.devices;
 
 public interface Schedulable {
-    void schedule(String timeExpression, Runnable task);
+    void scheduleAction(String action, String time);
+    String getSchedule();
 }
-

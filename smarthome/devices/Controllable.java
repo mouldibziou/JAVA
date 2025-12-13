@@ -1,7 +1,12 @@
 package smarthome.devices;
 
+
+
+/**
+ * Interface for devices that can be controlled remotely
+ */
 public interface Controllable {
-    void turnOn();
-    void turnOff();
+    void executeCommand(String command);
+    boolean isResponding();
 }
 

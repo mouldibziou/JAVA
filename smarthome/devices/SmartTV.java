@@ -1,6 +1,6 @@
 package smarthome.devices;
 
-public class SmartTV extends SmartDevice {
+public abstract class SmartTV extends SmartDevice {
 
     private int volume; // 0-100
     private int channel;

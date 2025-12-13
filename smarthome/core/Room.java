@@ -1,11 +1,8 @@
 package smarthome.core;
 
-import smarthome.devices.SmartDevice;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-
+import smarthome.devices.SmartDevice;
 public class Room{
 
     private String name;

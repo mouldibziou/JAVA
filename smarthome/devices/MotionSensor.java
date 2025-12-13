@@ -1,6 +1,6 @@
 package smarthome.devices;
 
-public class MotionSensor extends SmartDevice {
+public abstract class MotionSensor extends SmartDevice {
 
     private boolean motionDetected;
     private int sensitivity; // 1-10

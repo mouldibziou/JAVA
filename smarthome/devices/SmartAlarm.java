@@ -1,12 +1,13 @@
 package smarthome.devices;
 
-public class SmartAlarm extends SmartDevice implements Schedulable {
+public abstract class SmartAlarm extends SmartDevice implements Schedulable {
 
     private boolean isArmed;
     private boolean isTriggered;
     private String alarmMode; // HOME, AWAY, NIGHT, DISARMED
     private int pinCode;
     private static final double ENERGY_CONSUMPTION = 5.0; // watts
+    private String schedule; // Store schedule information
 
     public SmartAlarm(String name, int pinCode) {
         super(name, "SmartAlarm");
@@ -14,6 +15,7 @@ public class SmartAlarm extends SmartDevice implements Schedulable {
         this.isArmed = false;
         this.isTriggered = false;
         this.alarmMode = "DISARMED";
+        this.schedule = "No schedule set";
     }
 
     // Pin code management
@@ -127,10 +129,16 @@ public class SmartAlarm extends SmartDevice implements Schedulable {
         return isTriggered ? ENERGY_CONSUMPTION * 10 : ENERGY_CONSUMPTION;
     }
 
+    // Schedulable interface implementation
     @Override
-    public void schedule(String timeExpression, Runnable task) {
-        System.out.println(getName() + " scheduled action at " + timeExpression);
+    public void scheduleAction(String action, String time) {
+        this.schedule = action + " at " + time;
+        System.out.println(getName() + " scheduled: " + action + " at " + time);
         // Could be used to arm/disarm at specific times
-        task.run();
+    }
+
+    @Override
+    public String getSchedule() {
+        return schedule;
     }
 }
