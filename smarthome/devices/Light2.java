@@ -1,10 +1,6 @@
 package smarthome.devices;
 
-
-
-
-
-public abstract class Light2 extends SmartDevice {
+public class Light2 extends SmartDevice {
 
     private int brightness; // 0-100
     private static final double ENERGY_PER_BRIGHTNESS = 0.5; // watts per brightness unit
@@ -19,7 +15,6 @@ public abstract class Light2 extends SmartDevice {
         setBrightness(initialBrightness);
     }
 
-    // Brightness management
     public int getBrightness() {
         return brightness;
     }
@@ -42,19 +37,17 @@ public abstract class Light2 extends SmartDevice {
     }
 
     public void dim(int amount) {
-        int newBrightness = Math.max(0, brightness - amount);
-        setBrightness(newBrightness);
+        setBrightness(Math.max(0, brightness - amount));
     }
 
     public void brighten(int amount) {
-        int newBrightness = Math.min(100, brightness + amount);
-        setBrightness(newBrightness);
+        setBrightness(Math.min(100, brightness + amount));
     }
 
     @Override
     public void turnOn() {
         if (brightness == 0) {
-            setBrightness(50); // Default to 50% brightness
+            setBrightness(50);
         } else {
             setOn(true);
             System.out.println(getName() + " turned ON at " + brightness + "% brightness");
@@ -83,4 +76,16 @@ public abstract class Light2 extends SmartDevice {
     public double getEnergyConsumption() {
         return isOn() ? brightness * ENERGY_PER_BRIGHTNESS : 0.0;
     }
+    @Override
+public void setEnergyMode(String mode) {
+    if (mode == null) return;
+
+    switch (mode.toUpperCase()) {
+        case "ECO" -> setBrightness(Math.min(brightness, 30));
+        case "NORMAL" -> setBrightness(Math.min(brightness, 60));
+        case "HIGH" -> setBrightness(100);
+        default -> System.out.println("Unknown energy mode: " + mode);
+    }
+}
+
 }

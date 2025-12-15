@@ -3,7 +3,7 @@
 package smarthome.core;
 
 import smarthome.exceptions.DeviceNotFoundException;
-
+import smarthome.devices.SmartDevice;
 import java.util.ArrayList;
 import java.util.List;
 

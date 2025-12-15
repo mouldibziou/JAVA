@@ -1,11 +1,11 @@
 package smarthome.devices;
 
-public abstract class MotionSensor extends SmartDevice {
+public class MotionSensor extends SmartDevice {
 
     private boolean motionDetected;
     private int sensitivity; // 1-10
     private long lastMotionTime;
-    private static final double ENERGY_CONSUMPTION = 2.0; // Low power device
+    private static final double ENERGY_CONSUMPTION = 2.0;
 
     public MotionSensor(String name) {
         super(name, "MotionSensor");
@@ -21,7 +21,6 @@ public abstract class MotionSensor extends SmartDevice {
         this.lastMotionTime = 0;
     }
 
-    // Motion detection
     public boolean isMotionDetected() {
         return motionDetected;
     }
@@ -31,7 +30,6 @@ public abstract class MotionSensor extends SmartDevice {
             System.out.println(getName() + " is OFF and cannot detect motion.");
             return;
         }
-
         this.motionDetected = true;
         this.lastMotionTime = System.currentTimeMillis();
         System.out.println("⚠ " + getName() + " DETECTED MOTION in " + getRoomName());
@@ -47,20 +45,15 @@ public abstract class MotionSensor extends SmartDevice {
     }
 
     public String getTimeSinceLastMotion() {
-        if (lastMotionTime == 0) {
-            return "No motion detected yet";
-        }
+        if (lastMotionTime == 0) return "No motion detected yet";
 
         long seconds = (System.currentTimeMillis() - lastMotionTime) / 1000;
-        if (seconds < 60) {
-            return seconds + " seconds ago";
-        } else {
-            long minutes = seconds / 60;
-            return minutes + " minutes ago";
-        }
+        if (seconds < 60) return seconds + " seconds ago";
+
+        long minutes = seconds / 60;
+        return minutes + " minutes ago";
     }
 
-    // Sensitivity control
     public int getSensitivity() {
         return sensitivity;
     }
@@ -104,4 +97,16 @@ public abstract class MotionSensor extends SmartDevice {
     public double getEnergyConsumption() {
         return isOn() ? ENERGY_CONSUMPTION : 0.0;
     }
+    @Override
+public void setEnergyMode(String mode) {
+    if (mode == null) return;
+
+    switch (mode.toUpperCase()) {
+        case "ECO" -> setSensitivity(3);
+        case "NORMAL" -> setSensitivity(5);
+        case "HIGH" -> setSensitivity(8);
+        default -> System.out.println("Unknown energy mode: " + mode);
+    }
+}
+
 }
