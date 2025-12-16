@@ -73,6 +73,42 @@
                         </div>
                         <button class="btn-primary" onclick="handleAddDevice()">Add Device</button>
                     </div>
+
+                    <!-- Add Automation Rule Form -->
+                    <div class="card form-card">
+                        <h3>Add Automation Rule</h3>
+                        <div class="form-group">
+                            <label for="rule-name">Rule Name</label>
+                            <input type="text" id="rule-name" placeholder="E.g., Auto Light">
+                        </div>
+                        <div class="form-group">
+                            <label for="trigger-device">IF Device (Trigger)</label>
+                            <select id="trigger-device">
+                                <option value="" disabled selected>Select trigger device...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="trigger-state">IS State</label>
+                            <select id="trigger-state">
+                                <option value="ON">ON</option>
+                                <option value="OFF">OFF</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="target-device">THEN Device (Target)</label>
+                            <select id="target-device">
+                                <option value="" disabled selected>Select target device...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="action-state">SET State</label>
+                            <select id="action-state">
+                                <option value="turnOn">Turn ON</option>
+                                <option value="turnOff">Turn OFF</option>
+                            </select>
+                        </div>
+                        <button class="btn-primary" onclick="handleAddRule()">Create Rule</button>
+                    </div>
                 </div>
             </section>
         </main>
