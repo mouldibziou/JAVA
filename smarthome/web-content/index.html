@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Consumption Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Optional for charts -->
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Smart Home Energy</h1>
+            <div id="connection-status" class="status-badge">Connecting...</div>
+        </header>
+
+        <main>
+            <section class="summary">
+                <div class="card total-energy">
+                    <h2>Total Consumption</h2>
+                    <div class="value" id="total-energy-value">0.0 W</div>
+                </div>
+                <div class="card system-status">
+                    <h2>System Status</h2>
+                    <div class="value">Active</div>
+                </div>
+            </section>
+
+            <section class="rooms-grid" id="rooms-container">
+                <!-- Rooms will be injected here -->
+            </section>
+
+            <section class="management" id="management">
+                <h2>Management</h2>
+                <div class="forms-container">
+                    <!-- Add Room Form -->
+                    <div class="card form-card">
+                        <h3>Add Room</h3>
+                        <div class="form-group">
+                            <label for="new-room-name">Room Name</label>
+                            <input type="text" id="new-room-name" placeholder="E.g., Bedroom">
+                        </div>
+                        <button class="btn-primary" onclick="handleAddRoom()">Add Room</button>
+                    </div>
+
+                    <!-- Add Device Form -->
+                    <div class="card form-card">
+                        <h3>Add Device</h3>
+                        <div class="form-group">
+                            <label for="device-room-select">Select Room</label>
+                            <select id="device-room-select">
+                                <option value="" disabled selected>Select a room...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-device-name">Device Name</label>
+                            <input type="text" id="new-device-name" placeholder="E.g., Ceiling Fan">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-device-type">Device Type</label>
+                            <select id="new-device-type">
+                                <option value="Light">Light</option>
+                                <option value="Thermostat">Thermostat</option>
+                                <option value="MotionSensor">Motion Sensor</option>
+                                <option value="SmartTV">Smart TV</option>
+                                <option value="SmartAlarm">Smart Alarm</option>
+                            </select>
+                        </div>
+                        <button class="btn-primary" onclick="handleAddDevice()">Add Device</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>

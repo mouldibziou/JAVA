@@ -1,6 +1,6 @@
 package smarthome.devices;
 
-public abstract class SmartTV extends SmartDevice {
+public class SmartTV extends SmartDevice {
 
     private int volume; // 0-100
     private int channel;
@@ -138,10 +138,18 @@ public abstract class SmartTV extends SmartDevice {
 
     @Override
     public double getEnergyConsumption() {
-        if (!isOn()) return 0.0;
+        if (!isOn())
+            return 0.0;
 
         // Additional energy for streaming apps
         double appEnergy = currentApp.equals("None") ? 0.0 : 20.0;
         return BASE_ENERGY_CONSUMPTION + appEnergy;
+    }
+
+    @Override
+    public void setEnergyMode(String mode) {
+        if (mode == null)
+            return;
+        System.out.println(getName() + " energy mode set to " + mode + " (No specific logic for TV yet)");
     }
 }

@@ -55,7 +55,29 @@ public class SmartHomeTest {
         controller.listAllDevices();
 
         System.out.println("\n===== SMART HOME TEST END =====");
+
+        // Start Dashboard Server
+        try {
+            System.out.println("\n===== STARTING DASHBOARD SERVER =====");
+            System.out.println("Turning devices ON for dashboard demo...");
+            controller.turnOnAllDevices();
+
+            // Adjust path depending on where execution happens.
+            // Assuming execution from workspace root 'SmartHomeProject2025' or 'smarthome'
+            // We'll check if smarthome/web-content exists, else assume web-content
+            String webPath = "smarthome/web-content";
+            if (!new java.io.File(webPath).exists()) {
+                webPath = "web-content";
+            }
+
+            smarthome.web.DashboardServer server = new smarthome.web.DashboardServer(controller, 8081, webPath);
+            server.start();
+
+            System.out.println("Dashboard running at http://localhost:8081");
+            System.out.println("Press Ctrl+C to stop.");
+        } catch (java.io.IOException e) {
+            System.err.println("Failed to start dashboard server: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
-
-

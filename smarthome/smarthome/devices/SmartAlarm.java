@@ -1,6 +1,6 @@
 package smarthome.devices;
 
-public abstract class SmartAlarm extends SmartDevice implements Schedulable {
+public class SmartAlarm extends SmartDevice implements Schedulable {
 
     private boolean isArmed;
     private boolean isTriggered;
@@ -123,7 +123,8 @@ public abstract class SmartAlarm extends SmartDevice implements Schedulable {
 
     @Override
     public double getEnergyConsumption() {
-        if (!isOn()) return 0.0;
+        if (!isOn())
+            return 0.0;
 
         // Triggered alarm uses more power (sirens, lights, etc.)
         return isTriggered ? ENERGY_CONSUMPTION * 10 : ENERGY_CONSUMPTION;
@@ -140,5 +141,12 @@ public abstract class SmartAlarm extends SmartDevice implements Schedulable {
     @Override
     public String getSchedule() {
         return schedule;
+    }
+
+    @Override
+    public void setEnergyMode(String mode) {
+        if (mode == null)
+            return;
+        System.out.println(getName() + " energy mode set to " + mode + " (No specific logic for Alarm yet)");
     }
 }
