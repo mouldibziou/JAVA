@@ -38,7 +38,67 @@
             <section class="management" id="management">
                 <h2>Management</h2>
                 <div class="forms-container">
+                    <!-- System Control -->
+
+
+                    <!-- Search Device -->
+                    <div class="card form-card">
+                        <h3>Search Device</h3>
+                        <div class="form-group">
+                            <label for="search-input">Search by ID, Name or Type</label>
+                            <input type="text" id="search-input" placeholder="Type to search..."
+                                onkeyup="handleSearch()">
+                        </div>
+                        <div id="search-results" class="search-results"></div>
+                    </div>
+
+                    <!-- Central Controller (Unified) -->
+                    <div class="card form-card">
+                        <h3>Central Controller</h3>
+
+                        <!-- Bulk Operations -->
+                        <div class="control-group">
+                            <h4>Global Controls</h4>
+                            <div class="control-actions">
+                                <button class="btn-bulk-on" onclick="handleBulkOn()">Turn All ON</button>
+                                <button class="btn-bulk-off" onclick="handleBulkOff()">Turn All OFF</button>
+                            </div>
+                        </div>
+
+                        <!-- Schedule Presets -->
+                        <div class="control-group">
+                            <h4>Schedule Scenarios</h4>
+                            <div class="control-actions">
+                                <button class="btn-primary" onclick="handlePreset('Heat6AM')">Heat at 6 AM</button>
+                                <button class="btn-primary" onclick="handlePreset('Lights8PM')">Lights Off 8 PM</button>
+                                <button class="btn-primary" onclick="handlePreset('CheckSensors')">Check Sensors
+                                    12PM</button>
+                            </div>
+                        </div>
+
+                        <!-- Time Simulation -->
+                        <div class="control-group">
+                            <h4>Simulation</h4>
+                            <div class="form-group">
+                                <label for="sim-time" style="margin-bottom: 0.25rem;">Current Time</label>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <input type="time" id="sim-time" value="06:00">
+                                    <button class="btn-primary" onclick="handleScheduleCheck()">Run Simulation</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Rules List -->
+                    <div class="card form-card">
+                        <h3>Active Rules</h3>
+                        <div id="rules-list" class="rules-list">
+                            <p class="no-rules">Loading rules...</p>
+                        </div>
+                    </div>
+
                     <!-- Add Room Form -->
+
                     <div class="card form-card">
                         <h3>Add Room</h3>
                         <div class="form-group">

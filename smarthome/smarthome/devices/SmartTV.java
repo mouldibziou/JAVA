@@ -64,7 +64,10 @@ public class SmartTV extends SmartDevice {
         return channel;
     }
 
-    public void setChannel(int channel) {
+    public void setChannel(int channel) throws smarthome.exceptions.InvalidDeviceOperationException {
+        if (!isOn()) {
+            throw new smarthome.exceptions.InvalidDeviceOperationException("Cannot set channel while TV is OFF.");
+        }
         if (channel < 1 || channel > 999) {
             throw new IllegalArgumentException("Channel must be between 1 and 999.");
         }
@@ -73,16 +76,22 @@ public class SmartTV extends SmartDevice {
     }
 
     public void channelUp() {
-        if (channel < 999) {
-            channel++;
-            System.out.println(getName() + " channel: " + channel);
+        try {
+            if (channel < 999) {
+                setChannel(channel + 1);
+            }
+        } catch (smarthome.exceptions.InvalidDeviceOperationException e) {
+            System.out.println("Error: " + e.getMessage());
         }
     }
 
     public void channelDown() {
-        if (channel > 1) {
-            channel--;
-            System.out.println(getName() + " channel: " + channel);
+        try {
+            if (channel > 1) {
+                setChannel(channel - 1);
+            }
+        } catch (smarthome.exceptions.InvalidDeviceOperationException e) {
+            System.out.println("Error: " + e.getMessage());
         }
     }
 

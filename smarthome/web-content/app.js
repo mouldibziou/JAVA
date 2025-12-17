@@ -64,10 +64,46 @@ function updateDashboard(data) {
             const isOn = device.status.toUpperCase().includes("ON");
             const statusClass = isOn ? "status-on" : "status-off";
 
+            // Extract attributes from status string for sliders (fragile parsing but simulation works)
+            let extraControls = '';
+
+            // Light Brightness Slider
+            if (device.type === 'Light' || device.name.includes('[Light]')) {
+                // Try parsing brightness
+                const match = device.status.match(/Brightness: (\d+)%/);
+                const brightness = match ? parseInt(match[1]) : 0;
+                extraControls += `
+                    <div class="slider-container">
+                        <span class="slider-value">🔆</span>
+                        <input type="range" min="0" max="100" value="${brightness}" 
+                            onchange="handleControl('${device.id}', 'setBrightness', this.value)">
+                        <span class="slider-value">${brightness}%</span>
+                    </div>
+                 `;
+            }
+
+            // Thermostat Temp Slider
+            if (device.type === 'Thermostat') {
+                // Update regex to match exact status format from Thermostat.java: 
+                // " | Current: %.1f°C | Target: %.1f°C | Mode: %s"
+                // Or simple match
+                const match = device.status.match(/Target: ([\d.]+)°C/);
+                const target = match ? parseFloat(match[1]) : 22.0; // Default if not found
+                extraControls += `
+                    <div class="slider-container">
+                        <span class="slider-value">🌡️</span>
+                        <input type="range" min="10" max="35" step="1" value="${target}" 
+                            onchange="handleControl('${device.id}', 'setTargetTemperature', this.value)">
+                        <span class="slider-value">${target}°C</span>
+                    </div>
+                 `;
+            }
+
             deviceItem.innerHTML = `
                 <div class="device-info">
                     <span class="device-name">${device.name}</span>
                     <span class="device-status ${statusClass}">${device.status}</span>
+                    ${extraControls}
                 </div>
                 <div class="device-controls">
                     <span class="device-energy">${device.energy.toFixed(1)} W</span>
@@ -75,10 +111,16 @@ function updateDashboard(data) {
                         onclick="toggleDevice('${device.id}')">
                         ${isOn ? "ON" : "OFF"}
                     </button>
+                    <button class="btn-icon-delete" onclick="handleRemoveDevice('${device.id}')" title="Remove Device">
+                         &times;
+                    </button>
                 </div>
             `;
             deviceList.appendChild(deviceItem);
         });
+
+        // Update Rules List
+        updateRulesList(data.rules);
 
         roomCard.appendChild(deviceList);
         roomsContainer.appendChild(roomCard);
@@ -158,6 +200,47 @@ async function handleAddDevice() {
     }
 }
 
+
+
+async function handleControl(id, action, value) {
+    try {
+        const response = await fetch(`/api/control?id=${id}&action=${action}&value=${value}`, { method: 'POST' });
+        const data = await response.json();
+        if (data.status === 'ok') {
+            fetchStats(); // Update UI
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function handleScheduleCheck() {
+    const time = document.getElementById('sim-time').value;
+    if (!time) return;
+    try {
+        const response = await fetch(`/api/schedule/check?time=${time}`);
+        const data = await response.json();
+        alert(data.message || data.error);
+        fetchStats();
+    } catch (e) { console.error(e); }
+}
+
+function updateRulesList(rules) {
+    const container = document.getElementById('rules-list');
+    if (!container) return; // Guard
+
+    if (!rules || rules.length === 0) {
+        container.innerHTML = '<p class="no-rules">No active rules.</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+    rules.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'rule-item';
+        div.innerHTML = `<span>${r.name}</span> <span class="rule-active">${r.active ? 'ACTIVE' : 'INACTIVE'}</span>`;
+        container.appendChild(div);
+    });
+}
+
 async function handleAddRule() {
     const nameInput = document.getElementById('rule-name');
     const triggerSelect = document.getElementById('trigger-device');
@@ -192,6 +275,110 @@ async function handleAddRule() {
     } catch (e) {
         console.error('Error creating rule:', e);
     }
+}
+
+async function handleRemoveDevice(id) {
+    if (!confirm("Are you sure you want to remove this device?")) return;
+
+    try {
+        const response = await fetch(`/api/devices/remove?id=${id}`, { method: 'POST' });
+        const data = await response.json();
+        if (data.status === 'ok') {
+            fetchStats();
+        } else {
+            alert('Error removing device: ' + data.error);
+        }
+    } catch (e) {
+        console.error('Error removing device:', e);
+    }
+}
+
+async function handleBulkOn() {
+    try {
+        await fetch('/api/bulk/on', { method: 'POST' });
+        fetchStats();
+    } catch (e) { console.error(e); }
+}
+
+async function handleBulkOff() {
+    try {
+        await fetch('/api/bulk/off', { method: 'POST' });
+        fetchStats();
+    } catch (e) { console.error(e); }
+}
+
+async function handlePreset(type) {
+    // 1. Fetch current devices to get their IDs
+    // We can use the global state if we stored it, or just fetchStats again, 
+    // but easier to just use search or iterate known devices if we had them.
+    // For simplicity, we'll fetch stats to get list, then iterate.
+    try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+
+        let actions = [];
+
+        data.rooms.forEach(room => {
+            room.devices.forEach(d => {
+                if (type === 'Heat6AM' && d.type === 'Thermostat') {
+                    // Schedule ON at 06:00
+                    actions.push(handleControl(d.id, 'setSchedule', 'ON|06:00'));
+                } else if (type === 'Lights8PM' && d.type === 'Light') {
+                    // Schedule OFF at 20:00
+                    actions.push(handleControl(d.id, 'setSchedule', 'off|20:00'));
+                } else if (type === 'CheckSensors' && d.type === 'MotionSensor') {
+                    // Schedule ON at 12:00
+                    actions.push(handleControl(d.id, 'setSchedule', 'ON|12:00'));
+                }
+            });
+        });
+
+        await Promise.all(actions);
+        alert(`Preset '${type}' applied to matching devices.`);
+
+    } catch (e) {
+        console.error('Error applying preset:', e);
+    }
+}
+
+let searchTimeout;
+async function handleSearch() {
+    const query = document.getElementById('search-input').value.trim();
+    const resultsContainer = document.getElementById('search-results');
+
+    if (!query) {
+        resultsContainer.innerHTML = '';
+        return;
+    }
+
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(async () => {
+        try {
+            const response = await fetch(`/api/devices/search?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+
+            resultsContainer.innerHTML = '';
+            if (data.length === 0) {
+                resultsContainer.innerHTML = '<div class="no-results">No devices found.</div>';
+                return;
+            }
+
+            data.forEach(d => {
+                const item = document.createElement('div');
+                item.className = 'search-item';
+                item.innerHTML = `
+                    <div class="search-info">
+                        <strong>${d.name}</strong> <small>(${d.type})</small><br>
+                        <span class="search-room">Room: ${d.room}</span>
+                    </div>
+                    <button class="btn-sm-delete" onclick="handleRemoveDevice('${d.id}')">Remove</button>
+                `;
+                resultsContainer.appendChild(item);
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    }, 300); // Debounce
 }
 
 function updateDeviceSelects(rooms) {

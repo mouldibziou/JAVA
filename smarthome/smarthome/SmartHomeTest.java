@@ -70,10 +70,10 @@ public class SmartHomeTest {
                 webPath = "web-content";
             }
 
-            smarthome.web.DashboardServer server = new smarthome.web.DashboardServer(controller, 8081, webPath);
+            smarthome.web.DashboardServer server = new smarthome.web.DashboardServer(controller, 8085, webPath);
             server.start();
 
-            System.out.println("Dashboard running at http://localhost:8081");
+            System.out.println("Dashboard running at http://localhost:8085");
             System.out.println("Press Ctrl+C to stop.");
         } catch (java.io.IOException e) {
             System.err.println("Failed to start dashboard server: " + e.getMessage());

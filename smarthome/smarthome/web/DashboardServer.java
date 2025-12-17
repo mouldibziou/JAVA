@@ -32,6 +32,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalTime;
 
 public class DashboardServer {
 
@@ -57,6 +58,11 @@ public class DashboardServer {
         server.createContext("/api/devices/add", new AddDeviceHandler());
         server.createContext("/api/rules/add", new AddRuleHandler());
         server.createContext("/api/rules/list", new ListRulesHandler());
+        server.createContext("/api/schedule/check", new ScheduleHandler());
+        server.createContext("/api/devices/search", new SearchHandler());
+        server.createContext("/api/devices/remove", new RemoveDeviceHandler());
+        server.createContext("/api/bulk/on", new BulkOnHandler());
+        server.createContext("/api/bulk/off", new BulkOffHandler());
 
         // Static File Handler
         server.createContext("/", new StaticFileHandler());
@@ -92,12 +98,13 @@ public class DashboardServer {
     private class ControlHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
-            // Parse query params: /api/control?id=UUID&action=toggle
+            // Parse query params: /api/control?id=UUID&action=toggle&value=xxx
             String query = t.getRequestURI().getQuery();
             Map<String, String> params = queryToMap(query);
 
             String id = params.get("id");
             String action = params.get("action");
+            String value = params.get("value");
 
             String response = "{}";
             int code = 400;
@@ -105,18 +112,42 @@ public class DashboardServer {
             if (id != null && action != null) {
                 SmartDevice device = controller.findDeviceById(id);
                 if (device != null) {
-                    if ("toggle".equalsIgnoreCase(action)) {
-                        if (device.isOn())
-                            device.turnOff();
-                        else
+                    try {
+                        if ("toggle".equalsIgnoreCase(action)) {
+                            if (device.isOn())
+                                device.turnOff();
+                            else
+                                device.turnOn();
+                            response = "{\"status\":\"ok\", \"newState\":\"" + (device.isOn() ? "ON" : "OFF") + "\"}";
+                        } else if ("on".equalsIgnoreCase(action)) {
                             device.turnOn();
-                    } else if ("on".equalsIgnoreCase(action)) {
-                        device.turnOn();
-                    } else if ("off".equalsIgnoreCase(action)) {
-                        device.turnOff();
+                            response = "{\"status\":\"ok\", \"newState\":\"ON\"}";
+                        } else if ("off".equalsIgnoreCase(action)) {
+                            device.turnOff();
+                            response = "{\"status\":\"ok\", \"newState\":\"OFF\"}";
+                        } else if ("setBrightness".equalsIgnoreCase(action) && device instanceof Light2 light) {
+                            if (value != null) {
+                                int b = Integer.parseInt(value);
+                                light.setBrightness(b);
+                                response = "{\"status\":\"ok\", \"message\":\"Brightness set to " + b + "\"}";
+                            }
+                        } else if ("setTargetTemperature".equalsIgnoreCase(action)
+                                && device instanceof Thermostat thermostat) {
+                            if (value != null) {
+                                double temp = Double.parseDouble(value);
+                                thermostat.setTargetTemperature(temp);
+                                response = "{\"status\":\"ok\", \"message\":\"Target temp set to " + temp + "\"}";
+                            }
+                        } else {
+                            response = "{\"error\":\"Invalid action or device type\"}";
+                            code = 400;
+                        }
+                        if (code == 400 && response.contains("status"))
+                            code = 200; // Fix code if status ok
+                    } catch (Exception e) {
+                        code = 500;
+                        response = "{\"error\":\"" + e.getMessage() + "\"}";
                     }
-                    code = 200;
-                    response = "{\"status\":\"ok\", \"newState\":\"" + (device.isOn() ? "ON" : "OFF") + "\"}";
                 } else {
                     code = 404;
                     response = "{\"error\":\"Device not found\"}";
@@ -125,13 +156,28 @@ public class DashboardServer {
                 response = "{\"error\":\"Missing id or action\"}";
             }
 
-            t.getResponseHeaders().set("Content-Type", "application/json");
-            t.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-            byte[] bytes = response.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            t.sendResponseHeaders(code, bytes.length);
-            OutputStream os = t.getResponseBody();
-            os.write(bytes);
-            os.close();
+            sendJson(t, code, response);
+        }
+    }
+
+    private class ScheduleHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            String query = t.getRequestURI().getQuery();
+            Map<String, String> params = queryToMap(query);
+            String timeStr = params.get("time");
+
+            if (timeStr != null) {
+                try {
+                    LocalTime time = LocalTime.parse(timeStr);
+                    controller.checkSchedules(time);
+                    sendJson(t, 200, "{\"status\":\"ok\", \"message\":\"Processed schedule for " + timeStr + "\"}");
+                } catch (Exception e) {
+                    sendJson(t, 500, "{\"error\":\"Invalid time format (HH:mm)\"}");
+                }
+            } else {
+                sendJson(t, 400, "{\"error\":\"Missing time parameter\"}");
+            }
         }
     }
 
@@ -289,6 +335,94 @@ public class DashboardServer {
         }
     }
 
+    private class SearchHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            String query = t.getRequestURI().getQuery();
+            Map<String, String> params = queryToMap(query);
+            String q = params.get("q");
+
+            if (q != null && !q.trim().isEmpty()) {
+                q = q.toLowerCase();
+                // Search by ID or Type
+                List<SmartDevice> result = new java.util.ArrayList<>();
+
+                // 1. Try finding by ID directly
+                // 1. Try finding by ID directly (Logic integrated into loop below)
+                // SmartDevice byId = controller.findDeviceById(q);
+
+                // Better: iterate all rooms and find matches
+                for (Room r : controller.getHome().getRooms()) {
+                    for (SmartDevice d : r.getDevices()) {
+                        if (d.getId().toLowerCase().contains(q) || d.getType().toLowerCase().contains(q)
+                                || d.getName().toLowerCase().contains(q)) {
+                            result.add(d);
+                        }
+                    }
+                }
+
+                // Build JSON response
+                StringBuilder json = new StringBuilder("[");
+                for (int i = 0; i < result.size(); i++) {
+                    SmartDevice d = result.get(i);
+                    json.append("{");
+                    json.append("\"id\":\"").append(d.getId()).append("\",");
+                    json.append("\"name\":\"").append(d.getName()).append("\",");
+                    json.append("\"type\":\"").append(d.getType()).append("\",");
+                    json.append("\"room\":\"").append(d.getRoomName()).append("\"");
+                    json.append("}");
+                    if (i < result.size() - 1)
+                        json.append(",");
+                }
+                json.append("]");
+                sendJson(t, 200, json.toString());
+            } else {
+                sendJson(t, 400, "{\"error\":\"Missing query parameter 'q'\"}");
+            }
+        }
+    }
+
+    private class RemoveDeviceHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            String query = t.getRequestURI().getQuery();
+            Map<String, String> params = queryToMap(query);
+            String id = params.get("id");
+
+            if (id != null) {
+                SmartDevice device = controller.findDeviceById(id);
+                if (device != null) {
+                    try {
+                        controller.removeDeviceFromRoom(device.getRoomName(), device);
+                        sendJson(t, 200, "{\"status\":\"ok\", \"message\":\"Device removed\"}");
+                    } catch (Exception e) {
+                        sendJson(t, 500, "{\"error\":\"" + e.getMessage() + "\"}");
+                    }
+                } else {
+                    sendJson(t, 404, "{\"error\":\"Device not found\"}");
+                }
+            } else {
+                sendJson(t, 400, "{\"error\":\"Missing id\"}");
+            }
+        }
+    }
+
+    private class BulkOnHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            controller.turnOnAllDevices();
+            sendJson(t, 200, "{\"status\":\"ok\", \"message\":\"All devices turned ON\"}");
+        }
+    }
+
+    private class BulkOffHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            controller.turnOffAllDevices();
+            sendJson(t, 200, "{\"status\":\"ok\", \"message\":\"All devices turned OFF\"}");
+        }
+    }
+
     private Map<String, String> parseSimpleJson(String json) {
         Map<String, String> map = new HashMap<>();
         json = json.replace("{", "").replace("}", "").replace("\"", "");
@@ -305,6 +439,9 @@ public class DashboardServer {
     private void sendJson(HttpExchange t, int code, String response) throws IOException {
         t.getResponseHeaders().set("Content-Type", "application/json");
         t.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        t.getResponseHeaders().set("Cache-Control", "no-cache, no-store, must-revalidate");
+        t.getResponseHeaders().set("Pragma", "no-cache");
+        t.getResponseHeaders().set("Expires", "0");
         byte[] bytes = response.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         t.sendResponseHeaders(code, bytes.length);
         OutputStream os = t.getResponseBody();
@@ -355,7 +492,11 @@ public class DashboardServer {
         for (String param : query.split("&")) {
             String[] entry = param.split("=");
             if (entry.length > 1) {
-                result.put(entry[0], entry[1]);
+                try {
+                    result.put(entry[0], java.net.URLDecoder.decode(entry[1], "UTF-8"));
+                } catch (java.io.UnsupportedEncodingException e) {
+                    result.put(entry[0], entry[1]);
+                }
             } else {
                 result.put(entry[0], "");
             }
@@ -389,6 +530,7 @@ public class DashboardServer {
                 json.append("{");
                 json.append("\"id\": \"").append(d.getId()).append("\",");
                 json.append("\"name\": \"").append(d.getName()).append("\",");
+                json.append("\"type\": \"").append(d.getType()).append("\",");
                 json.append("\"status\": \"").append(d.getStatus()).append("\",");
                 json.append("\"energy\": ").append(d.getEnergyConsumption());
 
